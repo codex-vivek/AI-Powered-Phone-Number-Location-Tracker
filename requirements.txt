@@ -1,0 +1,9 @@
+streamlit
+folium
+streamlit-folium
+phonenumbers
+opencage
+geopy
+numpy
+pandas
+scikit-learn

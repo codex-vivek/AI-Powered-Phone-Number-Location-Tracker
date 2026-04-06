@@ -45,12 +45,12 @@ st.markdown("""
     <div style='background: #000; border: 2px solid #00ff41; padding: 10px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0,255,65,0.1); font-family: monospace;'>
         <div style='display: flex; justify-content: space-between; align-items: center;'>
             <div>
-                <h1 style='margin:0; font-size: 1.4rem; color: #00ff41; letter-spacing: 2px;'>POLICE SPECIAL INTERCEPT UNIT [v4.2]</h1>
-                <p style='margin:0; font-size: 0.7rem; color: #008f11;'>RESTRICTED ACCESS: MINISTRY OF HOME AFFAIRS // DEPT_OF_SATELLITE_INTEL</p>
+                <h1 style='margin:0; font-size: 1.4rem; color: #00ff41; letter-spacing: 2px;'>POLICE SPECIAL INTERCEPT UNIT [v5.0-STABLE]</h1>
+                <p style='margin:0; font-size: 0.7rem; color: #008f11;'>REFRESH LIVE URL TO CLEAR CACHE // IND-REGION LOCK ACTIVE</p>
             </div>
             <div style='text-align: right;'>
-                <p style='margin:0; color: #00ff41; font-size: 0.8rem;'>SIGNAL_LOCK: ACTIVE</p>
-                <p style='margin:0; color: #ef4444; font-size: 0.6rem;'>LINK: ENCRYPTED // SAT_SYNC_4</p>
+                <p style='margin:0; color: #00ff41; font-size: 0.8rem;'>REGISTRY_SYNC: SUCCESS</p>
+                <p style='margin:0; color: #ef4444; font-size: 0.6rem;'>SATELLITE: LOCKED ON INDIA CIRCLES</p>
             </div>
         </div>
     </div>

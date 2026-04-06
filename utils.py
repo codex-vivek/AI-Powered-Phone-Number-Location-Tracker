@@ -107,6 +107,7 @@ class LocationProcessor:
     def get_live_tower_data(self):
         """
         Simulated 3-tower triangulation for live tracking.
+        Uses multiple IP-based geolocators for better accuracy if HLR is offset.
         """
         try:
             import requests
@@ -114,56 +115,73 @@ class LocationProcessor:
             import random
             import re
             
-            response = requests.get("http://ip-api.com/json/", timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                if data['status'] == 'success':
-                    base_lat, base_lng = data['lat'], data['lon']
+            # Primary: ip-api.com
+            data = None
+            try:
+                response = requests.get("http://ip-api.com/json/", timeout=5)
+                if response.status_code == 200:
+                    res_json = response.json()
+                    if res_json.get('status') == 'success':
+                        data = res_json
+            except: pass
+
+            # Fallback: ipapi.co
+            if not data:
+                try:
+                    response = requests.get("https://ipapi.co/json/", timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        data['lat'] = data.get('latitude')
+                        data['lon'] = data.get('longitude')
+                except: pass
+
+            if data and data.get('lat'):
+                base_lat, base_lng = data['lat'], data['lon']
+                
+                # 3 virtual towers - reduced noise for better 'locking'
+                towers = []
+                for _ in range(3):
+                    towers.append({
+                        "lat": base_lat + random.uniform(-0.001, 0.001), 
+                        "lng": base_lng + random.uniform(-0.001, 0.001),
+                        "cid": random.randint(10000, 99999),
+                        "lac": random.randint(3000, 9000)
+                    })
+                
+                target_lat = sum(t['lat'] for t in towers) / 3
+                target_lng = sum(t['lng'] for t in towers) / 3
                     
-                    # 3 virtual towers
-                    towers = []
-                    for _ in range(3):
-                        towers.append({
-                            "lat": base_lat + random.uniform(-0.005, 0.005),
-                            "lng": base_lng + random.uniform(-0.005, 0.005),
-                            "cid": random.randint(10000, 99999),
-                            "lac": random.randint(3000, 9000)
-                        })
+                geolocator = Nominatim(user_agent="location_tracker_v6")
+                location = geolocator.reverse(f"{target_lat}, {target_lng}", timeout=10)
+                
+                if location:
+                    address = location.raw.get('address', {})
+                    addr_str = location.address.upper()
                     
-                    target_lat = sum(t['lat'] for t in towers) / 3
-                    target_lng = sum(t['lng'] for t in towers) / 3
+                    # Try to find Phase/Sector/Block in full address
+                    sector_match = re.search(r'(PHASE\s?\d+[A-Z]?|SECTOR\s?\d+[A-Z]?|BLOCK\s?[A-Z0-9]+)', addr_str)
                     
-                    geolocator = Nominatim(user_agent="location_tracker_v6")
-                    location = geolocator.reverse(f"{target_lat}, {target_lng}", timeout=10)
+                    mohalla = (
+                        sector_match.group(0) if sector_match else
+                        address.get('suburb') or 
+                        address.get('neighbourhood') or 
+                        address.get('residential') or 
+                        address.get('city_district') or 
+                        address.get('town') or
+                        data.get('city', 'SCANNING')
+                    )
                     
-                    if location:
-                        address = location.raw.get('address', {})
-                        addr_str = location.address.upper()
-                        
-                        # Try to find Phase/Sector/Block in full address
-                        sector_match = re.search(r'(PHASE\s?\d+[A-Z]?|SECTOR\s?\d+[A-Z]?|BLOCK\s?[A-Z0-9]+)', addr_str)
-                        
-                        mohalla = (
-                            sector_match.group(0) if sector_match else
-                            address.get('suburb') or 
-                            address.get('neighbourhood') or 
-                            address.get('residential') or 
-                            address.get('city_district') or 
-                            address.get('town') or
-                            data.get('city', 'SCANNING')
-                        )
-                        
-                        return {
-                            "lat": target_lat,
-                            "lng": target_lng,
-                            "towers": towers,
-                            "formatted": location.address,
-                            "mohalla": str(mohalla).upper(),
-                            "street": address.get('road', ''),
-                            "lac": towers[0]['lac'],
-                            "cellid": towers[0]['cid'],
-                            "is_live": True
-                        }
+                    return {
+                        "lat": target_lat,
+                        "lng": target_lng,
+                        "towers": towers,
+                        "formatted": location.address,
+                        "mohalla": str(mohalla).upper(),
+                        "street": address.get('road', ''),
+                        "lac": towers[0]['lac'],
+                        "cellid": towers[0]['cid'],
+                        "is_live": True
+                    }
         except:
             pass
         return None

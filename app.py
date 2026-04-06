@@ -53,7 +53,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-@st.fragment(run_every="5s")
+@st.fragment()
 def render_live_dashboard():
     info = st.session_state['tracking_info']
     status = st.session_state.get('device_status', "ONLINE")
@@ -258,6 +258,30 @@ def render_live_dashboard():
             st.markdown(f"<div style='height: 2px; width: 100%; background: #111; margin-top: 5px;'><div style='height: 100%; width: 100%; background: {marker_color}; opacity: 0.3;'></div></div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
+        st.markdown("</div>", unsafe_allow_html=True)
+
+def render_tactical_sidebar():
+    with st.sidebar:
+        st.markdown("<div style='background: #000; border: 1px solid #00ff41; padding: 15px; border-radius: 5px; margin-top: 20px;'>", unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #00ff41; font-size: 0.9rem; margin-top: 0;'>📡 TACTICAL OVERRIDE</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 0.7rem; color: #666;'>If automatic triangulation is offset, manually calibrate the sector below.</p>", unsafe_allow_html=True)
+        
+        # Use a key to prevent reset on manual interaction
+        new_sector = st.text_input("CALIBRATE SECTOR (PHASE/BLOCK)", 
+                                 value=st.session_state.get('sector_override', ""),
+                                 placeholder="e.g. Phase 3B2, Mohali",
+                                 key="sector_input_field")
+        
+        if st.button("UPDATE SECTOR LOCK"):
+            st.session_state['sector_override'] = new_sector
+            st.rerun()
+        
+        if st.session_state.get('sector_override'):
+            if st.button("CLEAR OVERRIDE"):
+                st.session_state['sector_override'] = None
+                st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
 # Main Execution Logic
 if not st.session_state.get('tracking_info'):
     col1, col2 = st.columns([1.5, 1], gap="small")
@@ -292,23 +316,31 @@ if not st.session_state.get('tracking_info'):
         st.markdown("</div>", unsafe_allow_html=True)
 else:
     # Tracking Mode
+    render_tactical_sidebar()
     render_live_dashboard()
     
-    # Scrolling Terminal Log at the Bottom
-    st.markdown("<div class='glass-card' style='height: 150px; overflow: hidden; padding-top: 5px;'>", unsafe_allow_html=True)
-    st.markdown("<p style='margin:0; font-size: 0.7rem; color: #00ff41; border-bottom: 1px solid #00ff41;'>LIVE SS7 PACKET INTERCEPT STREAM</p>", unsafe_allow_html=True)
-    
-    # Simulate a scrolling log
-    logs = [
-        f"[{time.strftime('%H:%M:%S')}] PACKET RECEIVED FROM MSC_IND_{st.session_state['ping_count'] % 99}",
-        f"[{time.strftime('%H:%M:%S')}] IMEI CHECK_SUM: VALIDATED",
-        f"[{time.strftime('%H:%M:%S')}] SIGNAL_LEVEL: {random.randint(-110, -70)} dBm",
-        f"[{time.strftime('%H:%M:%S')}] CIPHER_MODE: A5/1 (INTERCEPTED)",
-        f"[{time.strftime('%H:%M:%S')}] TRIANGULATION_OFFSET: {random.uniform(0.1, 0.9):.3f}m",
-    ]
-    for log in logs:
-        st.markdown(f"<p style='margin:0; font-family: monospace; font-size: 0.7rem;'>{log}</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Live Terminal Sub-Fragment
+    @st.fragment(run_every="3s")
+    def render_live_terminal():
+        st.markdown("<div class='glass-card' style='height: 150px; overflow: hidden; padding-top: 5px;'>", unsafe_allow_html=True)
+        st.markdown("<p style='margin:0; font-size: 0.7rem; color: #00ff41; border-bottom: 1px solid #00ff41;'>LIVE SS7 PACKET INTERCEPT STREAM</p>", unsafe_allow_html=True)
+        
+        # Increment ping for simulation effect
+        st.session_state['ping_count'] += 1
+        
+        # Simulate a scrolling log
+        logs = [
+            f"[{time.strftime('%H:%M:%S')}] PACKET RECEIVED FROM MSC_IND_{st.session_state['ping_count'] % 99}",
+            f"[{time.strftime('%H:%M:%S')}] IMEI CHECK_SUM: VALIDATED",
+            f"[{time.strftime('%H:%M:%S')}] SIGNAL_LEVEL: {random.randint(-110, -70)} dBm",
+            f"[{time.strftime('%H:%M:%S')}] CIPHER_MODE: A5/1 (INTERCEPTED)",
+            f"[{time.strftime('%H:%M:%S')}] TRIANGULATION_OFFSET: {random.uniform(0.1, 0.9):.3f}m",
+        ]
+        for log in logs:
+            st.markdown(f"<p style='margin:0; font-family: monospace; font-size: 0.7rem;'>{log}</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    render_live_terminal()
 
 # Footer
 st.markdown("<p style='text-align: center; color: #006400; font-size: 0.7rem;'>SECURED GOVT LINE // ENCRYPTED VIA RSA-4096 // POLICE_UNIT_INTEL</p>", unsafe_allow_html=True)
